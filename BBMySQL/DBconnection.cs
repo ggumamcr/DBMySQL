@@ -75,7 +75,7 @@ namespace BBMySQL
             }
         }
 
-        public Project SelectProject()
+        public void SelectProject()
         {
             string query = "SELECT * FROM projects";
 
@@ -108,8 +108,26 @@ namespace BBMySQL
                     string uDefault_assigned_to_id = dataReader["default_assigned_to_id"].ToString();
                     if (uId != null)
                     {
-                        project = new Project(uId, uName, uDescription, uHomepage, uIs_public, uParent_id, uCreated_on, uUpdated_on, uIdentifier, uStatus, uLft, uRgt, uInherit_members, uDefault_version_id, uDefault_assigned_to_id);
-                        //send to api 
+                        Project p = new Project();
+                        /*p.id = uId;
+                        p.name = uName;
+                        p.status = uStatus;*/
+                        p.id = uId;
+                        p.name = uName;
+                        p.description = uDescription;
+                        p.homepage = uHomepage;
+                        p.is_public = uIs_public;
+                        p.parent_id = uParent_id;
+                        p.created_on = uCreated_on;
+                        p.updated_on = uUpdated_on;
+                        p.identifier = uIdentifier;
+                        p.status = uStatus;
+                        p.lft = uLft;
+                        p.rgt = uRgt;
+                        p.inherit_members = uInherit_members;
+                        p.default_version_id = uDefault_version_id;
+                        p.default_assigned_to_id = uDefault_assigned_to_id;
+                        _ = Api.PostProject(p);
                     }
                 }
 
@@ -120,11 +138,6 @@ namespace BBMySQL
                 this.CloseConnection();
 
                 //return list to be displayed
-                return project;
-            }
-            else
-            {
-                return null;
             }
         }
 

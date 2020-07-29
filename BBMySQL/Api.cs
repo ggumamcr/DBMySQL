@@ -8,33 +8,70 @@ using System.Net.Http;
 using System.IO;
 using System.Net;
 using Newtonsoft.Json;
+using System.Xml.Serialization;
+using DocumentFormat.OpenXml.Wordprocessing;
+using System.Xml;
 
 namespace BBMySQL
 {
     class Api
     {
-        private static readonly HttpClient client = new HttpClient();
+        
 
         public static async Task PostProject(Project project)
-        {            
-            WebRequest request = WebRequest.Create("https://b3722b455a.fra2.easyredmine.com/projects.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a");// Create a request using a URL that can receive a post. 
-            
+        {
 
-            request.Method = "POST";// Set the Method property of the request to POST.
+            var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+            using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+            {
 
-            string jsonData = JsonConvert.SerializeObject(project);
-            var data = new StringContent(jsonData, Encoding.UTF8, "application/xml");
+                XmlSerializer xs = null;
 
-            var url = "https://b3722b455a.fra2.easyredmine.com/projects.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a";
-            var client = new HttpClient();
+                //These are the objects that will free us from extraneous markup.
+                XmlWriterSettings settings = null;
+                XmlSerializerNamespaces ns = null;
 
-            var response = await client.PostAsync(url, data);
+                //We use a XmlWriter instead of a StringWriter.
+                XmlWriter xw = null;
 
-            string result = response.Content.ReadAsStringAsync().Result;
-            Console.WriteLine(result);
+                String outString = String.Empty;
 
+                settings = new XmlWriterSettings();
+                settings.OmitXmlDeclaration = true;
 
-            
+                //To get rid of the default namespaces we create a new
+                //set of namespaces with one empty entry.
+                ns = new XmlSerializerNamespaces();
+                ns.Add("", "");
+
+                StringBuilder sb = new StringBuilder();
+
+                xs = new XmlSerializer(project.GetType());
+
+                //We create a new XmlWriter with the previously created settings 
+                //(to OmitXmlDeclaration).
+                xw = XmlWriter.Create(sb, settings);
+
+                //We call xs.Serialize and pass in our custom 
+                //XmlSerializerNamespaces object.
+                xs.Serialize(xw, project, ns);
+
+                xw.Flush();
+
+                outString = sb.ToString();
+                using (var content = new StringContent(outString, System.Text.Encoding.Default, "application/xml"))
+                {
+                    using (var response = await httpClient.PostAsync("projects.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
+                    {
+                        string responseData = await response.Content.ReadAsStringAsync();
+                    }
+                }
+                
+
+            }
         }
+
     }
+    
 }
+
