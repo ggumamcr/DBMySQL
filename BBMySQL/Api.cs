@@ -18,57 +18,119 @@ namespace BBMySQL
     {
         
 
-        public static async Task PostProject(Project project)
+        public static async Task<string> PostProject(Project project, List<Tuple<string, string>> tIds)
         {
-
-            var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
-            using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+            try
             {
 
-                XmlSerializer xs = null;
-
-                //These are the objects that will free us from extraneous markup.
-                XmlWriterSettings settings = null;
-                XmlSerializerNamespaces ns = null;
-
-                //We use a XmlWriter instead of a StringWriter.
-                XmlWriter xw = null;
-
-                String outString = String.Empty;
-
-                settings = new XmlWriterSettings();
-                settings.OmitXmlDeclaration = true;
-
-                //To get rid of the default namespaces we create a new
-                //set of namespaces with one empty entry.
-                ns = new XmlSerializerNamespaces();
-                ns.Add("", "");
-
-                StringBuilder sb = new StringBuilder();
-
-                xs = new XmlSerializer(project.GetType());
-
-                //We create a new XmlWriter with the previously created settings 
-                //(to OmitXmlDeclaration).
-                xw = XmlWriter.Create(sb, settings);
-
-                //We call xs.Serialize and pass in our custom 
-                //XmlSerializerNamespaces object.
-                xs.Serialize(xw, project, ns);
-
-                xw.Flush();
-
-                outString = sb.ToString();
-                using (var content = new StringContent(outString, System.Text.Encoding.Default, "application/xml"))
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
                 {
-                    using (var response = await httpClient.PostAsync("projects.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
+                    if(project.parent_id != null)
                     {
-                        string responseData = await response.Content.ReadAsStringAsync();
+                        foreach (var lst in tIds)
+                        {
+                            if (lst.Item1.Equals(project.parent_id))
+                                project.parent_id = lst.Item2;
+                        }
                     }
+
+                    String outString = String.Empty;
+
+                    outString = Obj2Str(project);
+                    using (var content = new StringContent(outString, Encoding.UTF8, "application/xml"))
+                    {
+                        var response = await httpClient.PostAsync("projects.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            bool rety = response.IsSuccessStatusCode;
+                        }
+                        string responseData = await response.Content.ReadAsStringAsync();
+
+                        XmlSerializer serializer = new XmlSerializer(project.GetType());
+                        StringReader rdr = new StringReader(responseData);
+                        Project resultingMessage = (Project)serializer.Deserialize(rdr);
+                        return resultingMessage.id;
+                    }
+
+
                 }
+            }
+            catch(Exception ex)
+            {
+                return "error";
+            }
+        }
+
+        public static async Task<Issue> PostIssue(Issue issue)
+        {
+            String outString = String.Empty;
+            try
+            {
                 
 
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+                {
+
+
+                    outString = Obj2Str(issue);
+                    using (var content = new StringContent(outString, Encoding.UTF8, "application/xml"))
+                    {
+                        var response = await httpClient.PostAsync("issues.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            bool rety = response.IsSuccessStatusCode;
+                        }
+                        string responseData = await response.Content.ReadAsStringAsync();
+
+                        XmlSerializer serializer = new XmlSerializer(issue.GetType());
+                        StringReader rdr = new StringReader(responseData);
+                        Issue resultingMessage = (Issue)serializer.Deserialize(rdr);
+                        return resultingMessage;
+                    }
+
+
+                }
             }
+            catch (Exception ex)
+            {
+                issue.subject = "error" + issue.subject;
+                return issue;
+            }
+        }
+
+
+        public static string Obj2Str(object obj)
+        {
+            XmlSerializer xs = null;
+            //These are the objects that will free us from extraneous markup.
+            XmlWriterSettings settings = null;
+            XmlSerializerNamespaces ns = null;
+            //We use a XmlWriter instead of a StringWriter.
+            XmlWriter xw = null;
+            String outString = String.Empty;
+
+            settings = new XmlWriterSettings();
+            settings.OmitXmlDeclaration = true;
+            //To get rid of the default namespaces we create a new
+            //set of namespaces with one empty entry.
+            ns = new XmlSerializerNamespaces();
+            ns.Add("", "");
+
+            StringBuilder sb = new StringBuilder();
+            xs = new XmlSerializer(obj.GetType());
+
+            //We create a new XmlWriter with the previously created settings 
+            //(to OmitXmlDeclaration).
+            xw = XmlWriter.Create(sb, settings);
+            //We call xs.Serialize and pass in our custom 
+            //XmlSerializerNamespaces object.
+            xs.Serialize(xw, obj, ns);
+            xw.Flush();
+
+            outString = sb.ToString();
+            return outString;
         }
 
     }

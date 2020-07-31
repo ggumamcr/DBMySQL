@@ -5,6 +5,11 @@ using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
 using MySql.Data.MySqlClient;
+using System.Data.SqlClient;
+using System.Data;
+using DocumentFormat.OpenXml.Drawing;
+using System.Globalization;
+using Org.BouncyCastle.Asn1.Cms;
 
 namespace BBMySQL
 {
@@ -75,76 +80,70 @@ namespace BBMySQL
             }
         }
 
-        public void SelectProject()
+        public async System.Threading.Tasks.Task SelectProjectAsync()
         {
-            string query = "SELECT * FROM projects";
+            List<Project> pList = new List<Project>();
+            pList = ListProjects();
 
-
-            //Open connection
-            if (this.OpenConnection() == true)
+            List<Tuple<string, string>> tIds = new List<Tuple<string, string>>();
+            TextWriter tw = new StreamWriter("projects.txt");
+            foreach (Project oprg in pList)
             {
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
-                Project project = null;
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                Tuple<string, string> ids = new Tuple<string, string> (oprg.id, await Api.PostProject(oprg, tIds));
+                tIds.Add(ids);
+                List<Issue> iList = new List<Issue>();
+                iList = ListIssue(ids.Item1, ids.Item2);
+                tw.WriteLine(ids.Item1 + " " + ids.Item2);
+                foreach (Issue i in iList)
                 {
-                    string uId = dataReader["id"].ToString();
-                    string uName = dataReader["name"].ToString();
-                    string uDescription = dataReader["description"].ToString();
-                    string uHomepage = dataReader["homepage"].ToString();
-                    string uIs_public = dataReader["is_public"].ToString();
-                    string uParent_id = dataReader["parent_id"].ToString();
-                    string uCreated_on = dataReader["created_on"].ToString();
-                    string uUpdated_on = dataReader["updated_on"].ToString();
-                    string uIdentifier = dataReader["identifier"].ToString();
-                    string uStatus = dataReader["status"].ToString();
-                    string uLft = dataReader["lft"].ToString();
-                    string uRgt = dataReader["rgt"].ToString();
-                    string uInherit_members = dataReader["inherit_members"].ToString();
-                    string uDefault_version_id = dataReader["default_version_id"].ToString();
-                    string uDefault_assigned_to_id = dataReader["default_assigned_to_id"].ToString();
-                    if (uId != null)
-                    {
-                        Project p = new Project();
-                        /*p.id = uId;
-                        p.name = uName;
-                        p.status = uStatus;*/
-                        p.id = uId;
-                        p.name = uName;
-                        p.description = uDescription;
-                        p.homepage = uHomepage;
-                        p.is_public = uIs_public;
-                        p.parent_id = uParent_id;
-                        p.created_on = uCreated_on;
-                        p.updated_on = uUpdated_on;
-                        p.identifier = uIdentifier;
-                        p.status = uStatus;
-                        p.lft = uLft;
-                        p.rgt = uRgt;
-                        p.inherit_members = uInherit_members;
-                        p.default_version_id = uDefault_version_id;
-                        p.default_assigned_to_id = uDefault_assigned_to_id;
-                        _ = Api.PostProject(p);
-                    }
+                    Issue returned = await Api.PostIssue(i);
+                    tw.WriteLine("   " + returned.subject);
+                    //List<TimeEntries> tList = new List<TimeEntries>();
+                    //tList = ListTimeEntries(i.id, returned.id, i.project_id);
+
+                    //foreach (TimeEntries Time in tList)
+                    //{
+                    //    bool getut = true;
+                    //}
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
             }
+            /*
+            using (TextWriter tw = new StreamWriter("projects.txt"))
+            {
+                foreach (Tuple<string,string> p in tIds)
+                {
+                    tw.WriteLine(p.Item1 + " " + p.Item2);
+                }
+                tw.Close();
+            }*/
+            MessageBox.Show("Done");
+            
         }
 
-        public Issue SelectIssue()
+        public Project ReadDBProject(MySqlDataReader dataReader)
         {
-            string query = "SELECT * FROM issues";
+            Project project = new Project();
+            project.id = dataReader["id"].ToString();
+            project.name = RemoveDiacritics(dataReader["name"].ToString());
+            project.description = RemoveDiacritics(dataReader["description"].ToString());
+            project.homepage = dataReader["homepage"].ToString();
+            project.is_public = dataReader["is_public"].ToString();
+            project.parent_id = dataReader["parent_id"].ToString();
+            project.created_on = dataReader["created_on"].ToString();
+            project.updated_on = dataReader["updated_on"].ToString();
+            project.identifier = dataReader["identifier"].ToString();
+            project.status = dataReader["status"].ToString();
+            project.lft = dataReader["lft"].ToString();
+            project.rgt = dataReader["rgt"].ToString();
+            project.inherit_members = dataReader["inherit_members"].ToString();
+            project.default_version_id = dataReader["default_version_id"].ToString();
+            project.default_assigned_to_id = dataReader["default_assigned_to_id"].ToString();
+            return project;
+        }
 
+        public List<Project> ListProjects()
+        {
+            string query = "SELECT * FROM projects WHERE id<100";
 
             //Open connection
             if (this.OpenConnection() == true)
@@ -153,48 +152,28 @@ namespace BBMySQL
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 //Create a data reader and Execute the command
                 MySqlDataReader dataReader = cmd.ExecuteReader();
-                Issue issue = null;
+
+                List<Project> pList = new List<Project>();
+                //Public lstReadOF_BBDD As New List(Of CLSLinFormulaDB)
+
                 //Read the data and store them in the list
                 while (dataReader.Read())
                 {
-                    string uId = dataReader["id"].ToString();
-                    string uTracker_id = dataReader["tracker_id"].ToString();
-                    string uProject_id = dataReader["project_id"].ToString();
-                    string uSubject = dataReader["subject"].ToString();
-                    string uDescription = dataReader["description"].ToString();
-                    string uDue_date = dataReader["due_date"].ToString();
-                    string uCategory_id = dataReader["category_id"].ToString();
-                    string uStatus_id = dataReader["status_id"].ToString();
-                    string uAssigned_to_id = dataReader["assigned_to_id"].ToString();
-                    string uPriority_id = dataReader["Priority_id"].ToString();
-                    string uFixed_versions_id = dataReader["Fixed_version_id"].ToString();
-                    string uAuthor_id = dataReader["author_id"].ToString();
-                    string uLock_version = dataReader["lock_version"].ToString();
-                    string uCreated_on = dataReader["created_on"].ToString();
-                    string uUpdated_on = dataReader["updated_on"].ToString();
-                    string uStart_date = dataReader["start_date"].ToString();
-                    string uDone_ratio = dataReader["done_ratio"].ToString();
-                    string uEstimated_hours = dataReader["estimated_hours"].ToString();
-                    string uParent_id = dataReader["parent_id"].ToString();
-                    string uRoot_id = dataReader["root_id"].ToString();
-                    string uLft = dataReader["lft"].ToString();
-                    string uRgt = dataReader["rgt"].ToString();
-                    string uIs_private = dataReader["is_private"].ToString();
-                    string uClosed_on = dataReader["closed_on"].ToString();
-                    if (uId != null)
+                    Project project = new Project();
+                    project = ReadDBProject(dataReader);
+                    if (project.id != null)
                     {
-                        issue = new Issue(uId, uTracker_id, uProject_id, uSubject, uDescription, uDue_date, uCategory_id, uStatus_id, uAssigned_to_id, uPriority_id, uFixed_versions_id, uAuthor_id, uLock_version, uCreated_on, uUpdated_on, uStart_date, uDone_ratio, uEstimated_hours, uParent_id, uRoot_id, uLft, uRgt, uIs_private, uClosed_on);
+                        pList.Add(project);
+                    }
+                    else
+                    {
+                        bool note = false;
                     }
                 }
 
-                //close Data Reader
                 dataReader.Close();
-
-                //close Connection
                 this.CloseConnection();
-
-                //return list to be displayed
-                return issue;
+                return pList;
             }
             else
             {
@@ -202,56 +181,143 @@ namespace BBMySQL
             }
         }
 
-        public TimeEntries SelectTimeEntries()
+        public static string RemoveDiacritics(string text)
         {
-            string query = "SELECT * FROM time_entries";
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
 
-
-            //Open connection
-            if (this.OpenConnection() == true)
+            foreach (var c in normalizedString)
             {
-                //Create Command
-                MySqlCommand cmd = new MySqlCommand(query, connection);
-                //Create a data reader and Execute the command
-                MySqlDataReader dataReader = cmd.ExecuteReader();
-                TimeEntries time = null;
-                //Read the data and store them in the list
-                while (dataReader.Read())
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
                 {
-                    string uId = dataReader["id"].ToString();
-                    string uProject_id = dataReader["project_id"].ToString();
-                    string uUser_id = dataReader["user_id"].ToString();
-                    string uHours = dataReader["hours"].ToString();
-                    string uComments = dataReader["comments"].ToString();
-                    string uActivity_id = dataReader["activity_id"].ToString();
-                    string uSpent_on = dataReader["spent_on"].ToString();
-                    string uTyear = dataReader["tyear"].ToString();
-                    string uTmonth = dataReader["tmonth"].ToString();
-                    string uTweek = dataReader["tweek"].ToString();
-                    string uCreated_on = dataReader["created_on"].ToString() ;
-                    string uUpdated_on = dataReader["updated_on"].ToString();
-                    if (uId != null)
-                    {
-                        time = new TimeEntries(uId, uProject_id, uUser_id, uHours, uComments, uActivity_id, uSpent_on, uTyear, uTmonth, uTweek, uCreated_on, uUpdated_on);
-                        
-                    }
+                    stringBuilder.Append(c);
                 }
-
-                //close Data Reader
-                dataReader.Close();
-
-                //close Connection
-                this.CloseConnection();
-
-                //return list to be displayed
-                return time;
             }
-            else
-            {
-                return null;
-            }
+
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
         
+        public List<Issue> ListIssue(string id, string new_id)
+        {
+            string query = "SELECT * FROM issues WHERE project_id="+id;
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+
+                List<Issue> iList = new List<Issue>();
+                //Read the data and store them in the list
+                while (dataReader.Read())
+                {
+                    Issue issue = new Issue();
+                    issue = ReadDBIssue(dataReader);
+                    issue.project_id = new_id;
+                    issue.priority_id = "12";
+                    issue.author_id = "5";
+                    if (issue != null)
+                    { 
+                        iList.Add(issue);
+                    }
+                }
+                dataReader.Close();
+                this.CloseConnection();
+
+                return iList;
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+        public Issue ReadDBIssue(MySqlDataReader dataReader)
+        {
+            Issue issue = new Issue();
+            //issue.id = dataReader["id"].ToString();
+            issue.tracker_id = dataReader["tracker_id"].ToString();
+            issue.project_id = dataReader["project_id"].ToString();
+            issue.subject = dataReader["subject"].ToString();
+            issue.description = dataReader["description"].ToString();
+            //issue.due_date = dataReader["due_date"].ToString();
+            //issue.category_id = dataReader["category_id"].ToString();
+            issue.status_id = dataReader["status_id"].ToString();
+            issue.assigned_to_id = dataReader["assigned_to_id"].ToString();
+            issue.priority_id = dataReader["Priority_id"].ToString();
+            //issue.fixed_versions_id = dataReader["Fixed_version_id"].ToString();
+            issue.author_id = dataReader["author_id"].ToString();
+            //issue.lock_version = dataReader["lock_version"].ToString();
+            //issue.created_on = dataReader["created_on"].ToString();
+            //issue.updated_on = dataReader["updated_on"].ToString();
+            //issue.start_date = dataReader["start_date"].ToString();
+            issue.done_ratio = dataReader["done_ratio"].ToString();
+            issue.estimated_hours = dataReader["estimated_hours"].ToString();
+            //issue.parent_id = dataReader["parent_id"].ToString();
+            //issue.root_id = dataReader["root_id"].ToString();
+            //issue.lft = dataReader["lft"].ToString();
+            //issue.rgt = dataReader["rgt"].ToString();
+            //issue.is_private = dataReader["is_private"].ToString();
+            //issue.closed_on = dataReader["closed_on"].ToString();
+            return issue;
+        }
+
+        public List<TimeEntries> ListTimeEntries(string issue_id, string new_id, string project_id)
+        {
+            string query = "SELECT * FROM time_entries WHERE issue_id="+issue_id;
+
+
+            //Open connection
+            if (this.OpenConnection() == true)
+            {
+                //Create Command
+                MySqlCommand cmd = new MySqlCommand(query, connection);
+                //Create a data reader and Execute the command
+                MySqlDataReader dataReader = cmd.ExecuteReader();
+                List<TimeEntries> tList = new List<TimeEntries>();
+
+                while (dataReader.Read())
+                {
+                    TimeEntries tEntry = new TimeEntries();
+                    tEntry = ReadDBTime(dataReader);
+                    tEntry.project_id = project_id;
+                    tEntry.issue_id = new_id;
+                    if (tEntry != null)
+                    {
+                        tList.Add(tEntry);
+                    }
+                }
+                dataReader.Close();
+                this.CloseConnection();
+
+                return tList;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        public TimeEntries ReadDBTime(MySqlDataReader dataReader)
+        {
+            TimeEntries tEntry = new TimeEntries();
+            tEntry.project_id = dataReader["project_id"].ToString();
+            tEntry.user_id = dataReader["user_id"].ToString();
+            tEntry.hours = dataReader["hours"].ToString();
+            tEntry.comments = dataReader["comments"].ToString();
+            tEntry.activity_id = dataReader["activity_id"].ToString();
+            tEntry.spent_on = dataReader["spent_on"].ToString();
+            tEntry.tyear = dataReader["tyear"].ToString();
+            tEntry.tmonth = dataReader["tmonth"].ToString();
+            tEntry.tweek = dataReader["tweek"].ToString();
+            tEntry.created_on = dataReader["created_on"].ToString();
+            tEntry.updated_on = dataReader["updated_on"].ToString();
+            return tEntry;
+        }
+
         public Attachments SelectAttachments()
         {
             string query = "SELECT * FROM attachments";
