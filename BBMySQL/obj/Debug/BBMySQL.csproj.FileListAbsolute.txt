@@ -38,3 +38,8 @@ C:\Projects\BBMySQL\BBMySQL\obj\Debug\BBMySQL.pdb
 C:\Projects\BBMySQL\BBMySQL\obj\Debug\BBMySQL.Form1.resources
 C:\Projects\BBMySQL\BBMySQL\bin\Debug\Newtonsoft.Json.dll
 C:\Projects\BBMySQL\BBMySQL\bin\Debug\Newtonsoft.Json.xml
+C:\Projects\BBMySQL\BBMySQL\bin\Debug\System.Net.Http.Extensions.dll
+C:\Projects\BBMySQL\BBMySQL\bin\Debug\System.Net.Http.Primitives.dll
+C:\Projects\BBMySQL\BBMySQL\bin\Debug\System.Net.Http.Extensions.xml
+C:\Projects\BBMySQL\BBMySQL\bin\Debug\System.Net.Http.Primitives.xml
+C:\Projects\BBMySQL\BBMySQL\obj\Debug\BBMySQL.csproj.App.config

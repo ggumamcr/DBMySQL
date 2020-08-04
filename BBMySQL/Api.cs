@@ -22,7 +22,6 @@ namespace BBMySQL
         {
             try
             {
-
                 var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
                 using (var httpClient = new HttpClient { BaseAddress = baseAddress })
                 {
@@ -52,8 +51,6 @@ namespace BBMySQL
                         Project resultingMessage = (Project)serializer.Deserialize(rdr);
                         return resultingMessage.id;
                     }
-
-
                 }
             }
             catch(Exception ex)
@@ -67,13 +64,9 @@ namespace BBMySQL
             String outString = String.Empty;
             try
             {
-                
-
                 var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
                 using (var httpClient = new HttpClient { BaseAddress = baseAddress })
                 {
-
-
                     outString = Obj2Str(issue);
                     using (var content = new StringContent(outString, Encoding.UTF8, "application/xml"))
                     {
@@ -89,14 +82,97 @@ namespace BBMySQL
                         Issue resultingMessage = (Issue)serializer.Deserialize(rdr);
                         return resultingMessage;
                     }
-
-
                 }
             }
             catch (Exception ex)
             {
                 issue.subject = "error" + issue.subject;
                 return issue;
+            }
+        }
+
+        public static async Task<string> PostTimeEntry(TimeEntries time)
+        {
+            String outString = String.Empty;
+            try
+            {
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+                {
+                    outString = Obj2Str(time);
+                    using (var content = new StringContent(outString, Encoding.UTF8, "application/xml"))
+                    {
+                        var response = await httpClient.PostAsync("time_entries.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            bool rety = response.IsSuccessStatusCode;
+                        }
+                        string responseData = await response.Content.ReadAsStringAsync();
+
+                        XmlSerializer serializer = new XmlSerializer(time.GetType());
+                        StringReader rdr = new StringReader(responseData);
+                        TimeEntries resultingMessage = (TimeEntries)serializer.Deserialize(rdr);
+                        return resultingMessage.hours;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return "errorHours";
+            }
+        }
+
+        public static async Task<AttachToken> PostUpload(Attachments att)
+        {
+            String outString = String.Empty;
+            try
+            {
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+                var stream = new FileStream("C:\\Users\\gguma\\Documents\\files\\"+att.disk_directory+"\\"+att.disk_filename, FileMode.Open);
+
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+                {
+                    using (var content = new StringContent(stream.ToString(), System.Text.Encoding.Default, "application/octet-stream"))
+                    {
+                        using (var response = await httpClient.PostAsync("uploads.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
+                        {
+                            string responseData = await response.Content.ReadAsStringAsync();
+                            AttachToken token = new AttachToken();
+                            XmlSerializer serializer = new XmlSerializer(token.GetType());
+                            StringReader rdr = new StringReader(responseData);
+                            AttachToken resultingMessage = (AttachToken)serializer.Deserialize(rdr);
+                            return resultingMessage;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+        public static async Task PostAttach(Attachments att, AttachToken token, string id)
+        {
+            String outString = String.Empty;
+            try
+            {
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+                {
+                    using (var content = new StringContent("<attach><entity_type>" +att.container_type+ "</entity_type><entity_id>"+id+"</entity_id ><attachments type='array'><attachment><token>"+token.token+"</token></attachment></attachments></attach>"))
+                    {
+                        using (var response = await httpClient.PostAsync("attach.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
+                        {
+                            string responseData = await response.Content.ReadAsStringAsync();
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
             }
         }
 

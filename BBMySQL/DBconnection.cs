@@ -98,24 +98,29 @@ namespace BBMySQL
                 {
                     Issue returned = await Api.PostIssue(i);
                     tw.WriteLine("   " + returned.subject);
-                    //List<TimeEntries> tList = new List<TimeEntries>();
-                    //tList = ListTimeEntries(i.id, returned.id, i.project_id);
+                    /*
+                    List<Attachments> aList = new List<Attachments>();
+                    aList = SelectAttachments(i.id);
 
-                    //foreach (TimeEntries Time in tList)
-                    //{
-                    //    bool getut = true;
-                    //}
+                    if (aList != null)
+                    {
+                        foreach (Attachments a in aList) 
+                        {
+                            AttachToken token = await Api.PostUpload(a);
+                            await Api.PostAttach(a, token, returned.id);
+                        }
+                    }*/
+                    List<TimeEntries> tList = new List<TimeEntries>();
+                    tList = ListTimeEntries(i.id, returned.id, i.project_id);
+
+                    foreach (TimeEntries Time in tList)
+                    {
+                        string returnedTime = await Api.PostTimeEntry(Time);
+                        tw.WriteLine("        " + returnedTime);
+                    }
                 }
             }
-            /*
-            using (TextWriter tw = new StreamWriter("projects.txt"))
-            {
-                foreach (Tuple<string,string> p in tIds)
-                {
-                    tw.WriteLine(p.Item1 + " " + p.Item2);
-                }
-                tw.Close();
-            }*/
+            
             MessageBox.Show("Done");
             
         }
@@ -238,7 +243,7 @@ namespace BBMySQL
         public Issue ReadDBIssue(MySqlDataReader dataReader)
         {
             Issue issue = new Issue();
-            //issue.id = dataReader["id"].ToString();
+            issue.id = dataReader["id"].ToString();
             issue.tracker_id = dataReader["tracker_id"].ToString();
             issue.project_id = dataReader["project_id"].ToString();
             issue.subject = dataReader["subject"].ToString();
@@ -269,7 +274,6 @@ namespace BBMySQL
         {
             string query = "SELECT * FROM time_entries WHERE issue_id="+issue_id;
 
-
             //Open connection
             if (this.OpenConnection() == true)
             {
@@ -283,7 +287,6 @@ namespace BBMySQL
                 {
                     TimeEntries tEntry = new TimeEntries();
                     tEntry = ReadDBTime(dataReader);
-                    tEntry.project_id = project_id;
                     tEntry.issue_id = new_id;
                     if (tEntry != null)
                     {
@@ -304,23 +307,24 @@ namespace BBMySQL
         public TimeEntries ReadDBTime(MySqlDataReader dataReader)
         {
             TimeEntries tEntry = new TimeEntries();
-            tEntry.project_id = dataReader["project_id"].ToString();
-            tEntry.user_id = dataReader["user_id"].ToString();
+            //tEntry.project_id = dataReader["project_id"].ToString();
+            //tEntry.user_id = dataReader["user_id"].ToString();
             tEntry.hours = dataReader["hours"].ToString();
-            tEntry.comments = dataReader["comments"].ToString();
+            tEntry.issue_id = dataReader["issue_id"].ToString();
+            /*tEntry.comments = dataReader["comments"].ToString();
             tEntry.activity_id = dataReader["activity_id"].ToString();
             tEntry.spent_on = dataReader["spent_on"].ToString();
             tEntry.tyear = dataReader["tyear"].ToString();
             tEntry.tmonth = dataReader["tmonth"].ToString();
             tEntry.tweek = dataReader["tweek"].ToString();
             tEntry.created_on = dataReader["created_on"].ToString();
-            tEntry.updated_on = dataReader["updated_on"].ToString();
+            tEntry.updated_on = dataReader["updated_on"].ToString();*/
             return tEntry;
         }
 
-        public Attachments SelectAttachments()
+        public List<Attachments> SelectAttachments(string issue_id)
         {
-            string query = "SELECT * FROM attachments";
+            string query = "SELECT * FROM attachments WHERE container_type='Issue' and container_id="+issue_id;
 
 
             //Open connection
@@ -330,27 +334,28 @@ namespace BBMySQL
                 MySqlCommand cmd = new MySqlCommand(query, connection);
                 //Create a data reader and Execute the command
                 MySqlDataReader dataReader = cmd.ExecuteReader();
-                Attachments file = null;
+                List<Attachments> file = new List<Attachments>();
                 //Read the data and store them in the list
                 while (dataReader.Read())
                 {
-                    string uId = dataReader["id"].ToString();
-                    string uContainer_id = dataReader["container_id"].ToString();
-                    string uContainer_type = dataReader["container_type"].ToString();
-                    string uFilename = dataReader["filename"].ToString();
-                    string uDisk_filename = dataReader["disk_filename"].ToString();
-                    string uFilesize = dataReader["filesize"].ToString();
-                    string uContent_type = dataReader["content_type"].ToString();
-                    string uDigest = dataReader["digest"].ToString();
-                    string uDownloads = dataReader["downloads"].ToString();
-                    string uAuthor_id = dataReader["author_id"].ToString();
-                    string uCreated_on = dataReader["created_on"].ToString();
-                    string uDescription = dataReader["description"].ToString();
-                    string uDisk_directory = dataReader["disk_directory"].ToString();
+                    Attachments att = new Attachments();
+                    att.id = dataReader["id"].ToString();
+                    att.container_id = dataReader["container_id"].ToString();
+                    att.container_type = dataReader["container_type"].ToString();
+                    att.filename = dataReader["filename"].ToString();
+                    att.disk_filename = dataReader["disk_filename"].ToString();
+                    att.filesize = dataReader["filesize"].ToString();
+                    att.content_type = dataReader["content_type"].ToString();
+                    att.digest = dataReader["digest"].ToString();
+                    att.downloads = dataReader["downloads"].ToString();
+                    att.author_id = dataReader["author_id"].ToString();
+                    att.created_on = dataReader["created_on"].ToString();
+                    att.description = dataReader["description"].ToString();
+                    att.disk_directory = dataReader["disk_directory"].ToString();
 
-                    if (uId != null)
+                    if (att != null)
                     {
-                        file = new Attachments(uId, uContainer_id, uContainer_type, uFilename, uDisk_filename, uFilesize, uContent_type, uDigest, uDownloads, uAuthor_id, uCreated_on, uDescription, uDisk_directory);
+                        file.Add(att);
                     }
                 }
 
