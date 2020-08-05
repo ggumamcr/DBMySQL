@@ -12,6 +12,7 @@ using System.Xml.Serialization;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.Xml;
 using System.Runtime.Remoting.Channels;
+using DocumentFormat.OpenXml.Office2010.Drawing;
 
 namespace BBMySQL
 {
@@ -130,26 +131,27 @@ namespace BBMySQL
             {
                 var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
                 string folder = att.disk_directory.Replace('/', '\\');
-                //string filepath = @"C:\Users\gguma\Documents\files\" + folder + @"\" + att.disk_filename;
-                string filepath = @"C:\Users\gguma\Documents\files\provaa.txt";
+                string filepath = @"C:\Users\gguma\Documents\files\" + folder + @"\" + att.disk_filename;
                 //string text = null;
-                //byte[] data = File.ReadAllBytes(filepath);
-                //string text = Encoding.Default.GetString(data);
+                byte[] data = File.ReadAllBytes(filepath);
+                string text = Encoding.Default.GetString(data);
 
                 /*
                 if (File.Exists(filepath))
                 {
                     text = File.ReadAllText(filepath, Encoding.ASCII);
                 }*/
-                
-                StreamReader streamreader = new StreamReader(filepath);
+                //string text = Convert.ToBase64String(File.ReadAllBytes(filepath));
+                /*StreamReader streamreader = new StreamReader(filepath);
                 string text = streamreader.ReadToEnd();
                 streamreader.Close();
-                text = text.Replace('\0', ' ');
+                text = text.Replace('\0', ' ');*/
+                //StringContent(text, System.Text.Encoding.Default, "application/octet-stream"))
 
                 using (var httpClient = new HttpClient { BaseAddress = baseAddress })
                 {
                     using (var content = new StringContent(text, System.Text.Encoding.Default, "application/octet-stream"))
+
                     {
                         using (var response = await httpClient.PostAsync("uploads.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
                         {

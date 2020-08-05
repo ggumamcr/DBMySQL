@@ -30,9 +30,11 @@ namespace BBMySQL
     {
         [XmlAttribute("type")]
         public string type { get; set; }
-        public upload upload { get; set; }
+        [XmlElement("")]
+        public upload[] upload { get; set; }
     }
 
+    [XmlRoot("")]
     public class upload
         {
         public string token { get; set; }

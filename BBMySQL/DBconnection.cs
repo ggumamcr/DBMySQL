@@ -10,6 +10,7 @@ using System.Data;
 using DocumentFormat.OpenXml.Drawing;
 using System.Globalization;
 using Org.BouncyCastle.Asn1.Cms;
+using System.Linq;
 
 namespace BBMySQL
 {
@@ -99,7 +100,7 @@ namespace BBMySQL
 
                 foreach (Issue i in iList)
                 {
-                    AttachToken token = await Api.PostUploadP();
+                    /*AttachToken token = await Api.PostUploadP();
                     //await Api.PostAttachP(token, returned.id);
                     upload upload = new upload();
                     upload.token = token.token;
@@ -108,26 +109,30 @@ namespace BBMySQL
                     uploads uploads = new uploads();
                     uploads.type = "array";
                     uploads.upload = upload;
-                    i.uploads = uploads;
-
-                    Issue returned = await Api.PostIssue(i);
-                    tw.WriteLine("   " + returned.subject);
-
-
-
-                    /*List<Attachments> aList = new List<Attachments>();
+                    i.uploads = uploads;*/
+                    List<Attachments> aList = new List<Attachments>();
                     aList = SelectAttachments(i.id);
 
                     if (aList != null)
                     {
+                        int index = 0;
+                        uploads uploads = new uploads();
+                        uploads.type = "array";
+                        uploads.upload = new upload[aList.Count];
                         foreach (Attachments a in aList)
                         {
                             AttachToken token = await Api.PostUpload(a);
-                            await Api.PostAttach(a, token, returned.id);
-                            //i.uploads += "<token>" + token.token + "</token>";
+                            upload upload = new upload();
+                            upload.token = token.token;
+                            upload.filename = a.filename;
+                            upload.content_type = a.content_type;
+                            uploads.upload[index] = upload;
+                            i.uploads = uploads; 
+                            index++;
                         }
-                    }*/
-
+                    }
+                    Issue returned = await Api.PostIssue(i);
+                    tw.WriteLine("   " + returned.subject);
 
 
                     List<TimeEntries> tList = new List<TimeEntries>();
