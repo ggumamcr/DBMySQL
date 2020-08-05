@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.Xml.Serialization;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.Xml;
+using System.Runtime.Remoting.Channels;
 
 namespace BBMySQL
 {
@@ -128,11 +129,27 @@ namespace BBMySQL
             try
             {
                 var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
-                var stream = new FileStream("C:\\Users\\gguma\\Documents\\files\\"+att.disk_directory+"\\"+att.disk_filename, FileMode.Open);
+                string folder = att.disk_directory.Replace('/', '\\');
+                //string filepath = @"C:\Users\gguma\Documents\files\" + folder + @"\" + att.disk_filename;
+                string filepath = @"C:\Users\gguma\Documents\files\provaa.txt";
+                //string text = null;
+                //byte[] data = File.ReadAllBytes(filepath);
+                //string text = Encoding.Default.GetString(data);
+
+                /*
+                if (File.Exists(filepath))
+                {
+                    text = File.ReadAllText(filepath, Encoding.ASCII);
+                }*/
+                
+                StreamReader streamreader = new StreamReader(filepath);
+                string text = streamreader.ReadToEnd();
+                streamreader.Close();
+                text = text.Replace('\0', ' ');
 
                 using (var httpClient = new HttpClient { BaseAddress = baseAddress })
                 {
-                    using (var content = new StringContent(stream.ToString(), System.Text.Encoding.Default, "application/octet-stream"))
+                    using (var content = new StringContent(text, System.Text.Encoding.Default, "application/octet-stream"))
                     {
                         using (var response = await httpClient.PostAsync("uploads.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
                         {
@@ -160,7 +177,77 @@ namespace BBMySQL
 
                 using (var httpClient = new HttpClient { BaseAddress = baseAddress })
                 {
-                    using (var content = new StringContent("<attach><entity_type>" +att.container_type+ "</entity_type><entity_id>"+id+"</entity_id ><attachments type='array'><attachment><token>"+token.token+"</token></attachment></attachments></attach>"))
+                    using (var content = new StringContent("<attach><entity_type>" +att.container_type+ "</entity_type><entity_id>"+id+"</entity_id ><attachments type='array'><attachment><token>"+token.token+"</token></attachment></attachments></attach>", System.Text.Encoding.Default, "application/octet-stream"))
+                    {
+                        using (var response = await httpClient.PostAsync("attach.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
+                        {
+                            string responseData = await response.Content.ReadAsStringAsync();
+
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+
+        public static async Task<AttachToken> PostUploadP()
+        {
+            String outString = String.Empty;
+            try
+            {
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+                //string folder = att.disk_directory.Replace('/', '\\');
+                //string filepath = @"C:\Users\gguma\Documents\files\" + folder + @"\" + att.disk_filename;
+                string filepath = @"C:\Users\gguma\Documents\files\provaa.txt";
+                //string text = null;
+                //byte[] data = File.ReadAllBytes(filepath);
+                //string text = Encoding.Default.GetString(data);
+
+                /*
+                if (File.Exists(filepath))
+                {
+                    text = File.ReadAllText(filepath, Encoding.ASCII);
+                }*/
+
+                StreamReader streamreader = new StreamReader(filepath);
+                string text = streamreader.ReadToEnd();
+                streamreader.Close();
+                text = text.Replace('\0', ' ');
+
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+                {
+                    using (var content = new StringContent(text, System.Text.Encoding.Default, "application/octet-stream"))
+                    {
+                        using (var response = await httpClient.PostAsync("uploads.xml?filename=provaa.txt&key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
+                        {
+                            string responseData = await response.Content.ReadAsStringAsync();
+                            AttachToken token = new AttachToken();
+                            XmlSerializer serializer = new XmlSerializer(token.GetType());
+                            StringReader rdr = new StringReader(responseData);
+                            AttachToken resultingMessage = (AttachToken)serializer.Deserialize(rdr);
+                            return resultingMessage;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+        }
+        public static async Task PostAttachP(AttachToken token, string id)
+        {
+            String outString = String.Empty;
+            try
+            {
+                var baseAddress = new Uri("https://b3722b455a.fra2.easyredmine.com/");
+
+                using (var httpClient = new HttpClient { BaseAddress = baseAddress })
+                {
+                    using (var content = new StringContent("<attach><entity_type>Issue</entity_type><entity_id>" + id + "</entity_id ><attachments type='array'><attachment><token>" + token.token + "</token></attachment></attachments></attach>", System.Text.Encoding.Default, "application/octet-stream"))
                     {
                         using (var response = await httpClient.PostAsync("attach.xml?key=b17e9372ec58cd8a17190f83c8084bc9321ca12a", content))
                         {

@@ -94,22 +94,42 @@ namespace BBMySQL
                 List<Issue> iList = new List<Issue>();
                 iList = ListIssue(ids.Item1, ids.Item2);
                 tw.WriteLine(ids.Item1 + " " + ids.Item2);
+
+
+
                 foreach (Issue i in iList)
                 {
+                    AttachToken token = await Api.PostUploadP();
+                    //await Api.PostAttachP(token, returned.id);
+                    upload upload = new upload();
+                    upload.token = token.token;
+                    upload.filename = "provaa.txt";
+                    upload.content_type = "text/plain";
+                    uploads uploads = new uploads();
+                    uploads.type = "array";
+                    uploads.upload = upload;
+                    i.uploads = uploads;
+
                     Issue returned = await Api.PostIssue(i);
                     tw.WriteLine("   " + returned.subject);
-                    /*
-                    List<Attachments> aList = new List<Attachments>();
+
+
+
+                    /*List<Attachments> aList = new List<Attachments>();
                     aList = SelectAttachments(i.id);
 
                     if (aList != null)
                     {
-                        foreach (Attachments a in aList) 
+                        foreach (Attachments a in aList)
                         {
                             AttachToken token = await Api.PostUpload(a);
                             await Api.PostAttach(a, token, returned.id);
+                            //i.uploads += "<token>" + token.token + "</token>";
                         }
                     }*/
+
+
+
                     List<TimeEntries> tList = new List<TimeEntries>();
                     tList = ListTimeEntries(i.id, returned.id, i.project_id);
 
@@ -118,6 +138,8 @@ namespace BBMySQL
                         string returnedTime = await Api.PostTimeEntry(Time);
                         tw.WriteLine("        " + returnedTime);
                     }
+                    
+                   
                 }
             }
             
